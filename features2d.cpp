@@ -413,6 +413,32 @@ struct MultiDMatches BFMatcher_KnnMatchWithParams(BFMatcher b, Mat query, Mat tr
     return ret;
 }
 
+FlannBasedMatcher FlannBasedMatcher_Create(){
+    return new cv::Ptr<cv::FlannBasedMatcher>(cv::FlannBasedMatcher::create());
+}
+
+struct MultiDMatches FlannBasedMatcher_KnnMatch(FlannBasedMatcher b, Mat query, Mat train, int k) {
+    std::vector< std::vector<cv::DMatch> > matches;
+    (*b)->knnMatch(*query, *train, matches, k);
+
+    DMatches *dms = new DMatches[matches.size()];
+    for (size_t i = 0; i < matches.size(); ++i) {
+        DMatch *dmatches = new DMatch[matches[i].size()];
+        for (size_t j = 0; j < matches[i].size(); ++j) {
+            DMatch dmatch = {matches[i][j].queryIdx, matches[i][j].trainIdx, matches[i][j].imgIdx,
+                             matches[i][j].distance};
+            dmatches[j] = dmatch;
+        }
+        dms[i] = {dmatches, (int) matches[i].size()};
+    }
+    MultiDMatches ret = {dms, (int) matches.size()};
+    return ret;
+}
+
+void FlannBasedMatcher_Close(FlannBasedMatcher b){
+    delete b;
+}
+
 void DrawKeyPoints(Mat src, struct KeyPoints kp, Mat dst, Scalar s, int flags) {
         std::vector<cv::KeyPoint> keypts;
         cv::KeyPoint keypt;

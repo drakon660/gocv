@@ -700,6 +700,60 @@ func getDMatches(ret C.DMatches) []DMatch {
 	return keys
 }
 
+// FlannBasedMatcher is a wrapper around the the cv::FlannBasedMatcher algorithm
+type FlannBasedMatcher struct {
+	// C.BFMatcher
+	p unsafe.Pointer
+}
+
+type FlannSearchParams struct {
+	checks int
+	eps float32
+	sorted bool
+}
+
+// FlannKDTreeIndexParams is a wrapper around the the cv::KDTreeIndexParams algorithm
+type FlannKDTreeIndexParams struct {
+	trees int
+}
+
+func NewFlannKDTreeIndexParams() FlannKDTreeIndexParams{
+	return FlannKDTreeIndexParams{ trees: 4  }
+}
+
+func NewSearchParams() FlannSearchParams {
+	return FlannSearchParams{ checks : 32 , eps: 0, sorted:true }
+}
+
+func NewFlannBasedMatcherWithParams(KDTreeIndexParams FlannKDTreeIndexParams, SearchParams FlannSearchParams) FlannBasedMatcher {
+
+	return FlannBasedMatcher{p: unsafe.Pointer(C.FlannBasedMatcher_Create())}
+}
+
+// NewFlannBasedMatcher returns a new FlannBasedMatcher
+//
+// For further details, please see:
+// https://docs.opencv.org/master/dc/de2/classcv_1_1FlannBasedMatcher.html
+//
+func NewFlannBasedMatcher() FlannBasedMatcher {
+	return FlannBasedMatcher{p: unsafe.Pointer(C.FlannBasedMatcher_Create())}
+}
+
+// Close FlannBasedMatcher
+func (b *FlannBasedMatcher) Close() error {
+	C.FlannBasedMatcher_Close((C.FlannBasedMatcher)(b.p))
+	b.p = nil
+	return nil
+}
+
+func (b *FlannBasedMatcher) KnnMatch(query, train Mat, k int) [][]DMatch {
+	ret := C.FlannBasedMatcher_KnnMatch((C.FlannBasedMatcher)(b.p), query.p, train.p, C.int(k))
+	defer C.MultiDMatches_Close(ret)
+
+	return getMultiDMatches(ret)
+}
+
+
 // DrawMatchesFlag are the flags setting drawing feature
 //
 // For further details please see:
